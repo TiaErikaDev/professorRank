@@ -1,0 +1,5 @@
+INSTRUÇÕES:
+1. Execute o arquivo "professorRank.exe".
+2. Após abrir a janela, Insira seu CPF, Senha (login no sistema da SEDUC) e classificação (ampla concorrência) nos campos solicitados.
+3. Clique em "Iniciar Consulta" e aguarde o processamento.
+4. Os resultados serão exibidos na tela.
