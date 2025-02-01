@@ -62,7 +62,13 @@ def iniciar_consulta():
 
             lista_escolas = driver.find_elements(By.XPATH, "//a[contains(@onclick, 'prepare_exibir_inscritos_carencia')]")
             
-            crede_name = 'SEFOR 1' if i == 21 else 'SEFOR 2' if i == 22 else 'SEFOR 3'
+            crede_name = driver.find_element(By.XPATH, '//*[@id="container-body"]/div[1]/div/div/fieldset[2]/form/div[2]/div/button/span[1]').text
+            if i == 21:
+                crede_name = "SEFOR 1"
+            elif i == 22:
+                crede_name = "SEFOR 2"
+            elif i == 23:
+                crede_name = "SEFOR 3"
         
             resultado_text.insert(tk.END, "\n")
             resultado_text.insert(tk.END, f"--------------------------------{crede_name}--------------------------------\n")
