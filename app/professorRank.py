@@ -16,6 +16,7 @@ def iniciar_consulta():
     cpf = entry_cpf.get()
     senha = entry_senha.get()
     classificacao = entry_classificacao.get()
+    crede = entry_crede.get()
 
     # Validação dos campos
     if not cpf or not senha or not classificacao:
@@ -44,17 +45,27 @@ def iniciar_consulta():
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
     driver.get("https://selecaoprofessor.seduc.ce.gov.br/login")
-    time.sleep(1)
+    time.sleep(2)
 
     WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.ID, "cpf")))
     driver.find_element(By.ID, "cpf").send_keys(cpf)
     driver.find_element(By.ID, "pass").send_keys(senha)
     driver.find_element(By.ID, "btLogin").click()
-    time.sleep(1)
-
-    for i in range(21, 24):
+    time.sleep(2)
+    
+    crede = crede.split()[-1]
+    driver.get(f"https://selecaoprofessor.seduc.ce.gov.br/chamada_selecao?crede={crede}")
+    time.sleep(2)
+    
+    select_munic = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="munic"]')))
+    municipios = select_munic.find_elements(By.TAG_NAME, 'option')
+    municipios_codigo = [munic.get_attribute("value") for munic in municipios]
+    for munic_value in municipios_codigo:
         try:
-            URL_CREDE = f"https://selecaoprofessor.seduc.ce.gov.br/chamada_selecao?crede={i}&munic=1347"
+            if not munic_value:  # Ignora a opção "---Selecione---"
+                continue
+            
+            URL_CREDE = f"https://selecaoprofessor.seduc.ce.gov.br/chamada_selecao?crede={crede}&munic={munic_value}"
             driver.get(URL_CREDE)
             time.sleep(1)
 
@@ -62,14 +73,19 @@ def iniciar_consulta():
 
             lista_escolas = driver.find_elements(By.XPATH, "//a[contains(@onclick, 'prepare_exibir_inscritos_carencia')]")
             
-            crede_name = driver.find_element(By.XPATH, '//*[@id="container-body"]/div[1]/div/div/fieldset[2]/form/div[2]/div/button/span[1]').text
-            if i == 21:
-                crede_name = "SEFOR 1"
-            elif i == 22:
-                crede_name = "SEFOR 2"
-            elif i == 23:
-                crede_name = "SEFOR 3"
-        
+            if not lista_escolas:  # Se nenhuma escola for encontrada, passa para o próximo município
+                resultado_text.insert(tk.END, f"Nenhuma escola encontrada no município {munic_value.text}. Passando para o próximo...\n")
+                continue
+            
+            crede_name_credes = driver.find_element(By.XPATH, '//*[@id="container-body"]/div[1]/div/div/fieldset[2]/form/div[2]/div/button/span[1]').text
+            crede_name_sefor = {
+                21: "SEFOR 1",
+                22: "SEFOR 2",
+                23: "SEFOR 3"
+            }
+            crede_name = crede_name_sefor.get(int(crede), crede_name_credes)
+            
+            
             resultado_text.insert(tk.END, "\n")
             resultado_text.insert(tk.END, f"--------------------------------{crede_name}--------------------------------\n")
             resultado_text.insert(tk.END, f"Total de escolas na {crede_name}: {len(lista_escolas)}\n")
@@ -126,9 +142,9 @@ def iniciar_consulta():
                     resultado_text.insert(tk.END, f"Erro ao processar escola {escola_index + 1}: {e}\n")
                     driver.get(URL_CREDE)
                     time.sleep(1)
-                        
+                            
         except Exception as e:
-            messagebox.showerror("Erro", f"Ocorreu um erro geral: {e}")
+            continue
 
     driver.quit()
     resultado_text.insert(tk.END, "Consulta concluída!\n")
@@ -150,16 +166,20 @@ tk.Label(janela, text="Classificação:").grid(row=2, column=0)
 entry_classificacao = tk.Entry(janela)
 entry_classificacao.grid(row=2, column=1)
 
+tk.Label(janela, text="CREDE:").grid(row=3, column=0)
+entry_crede = tk.Entry(janela)
+entry_crede.grid(row=3, column=1)
+
 # Botão para iniciar a consulta
-tk.Button(janela, text="Iniciar Consulta", command=iniciar_consulta).grid(row=3, column=0, columnspan=2)
+tk.Button(janela, text="Iniciar Consulta", command=iniciar_consulta).grid(row=4, column=0, columnspan=2)
 
 # Área de resultados (usando ScrolledText para permitir rolagem)
-resultado_text = scrolledtext.ScrolledText(janela, width=80, height=20, wrap=tk.WORD)
-resultado_text.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+resultado_text = scrolledtext.ScrolledText(janela, width=100, height=40, wrap=tk.WORD)
+resultado_text.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
 # Label para exibir a mensagem de "Aguarde"
-aguarde_label = tk.Label(janela, text="", fg="white")
-aguarde_label.grid(row=5, column=0, columnspan=2)
+aguarde_label = tk.Label(janela, text="", fg="white", bg="black")
+aguarde_label.grid(row=6, column=0, columnspan=2)
 
 # Inicia a interface
 janela.mainloop()
